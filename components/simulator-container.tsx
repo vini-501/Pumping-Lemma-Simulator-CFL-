@@ -12,11 +12,10 @@ export function SimulatorContainer({
       <div className="max-w-full mx-auto px-4">
         <header className="mb-8">
           <h1 className="text-4xl font-bold text-foreground mb-2">
-            Pumping Lemma Simulator (CFL)
+            Pumping Lemma Simulator
           </h1>
           <p className="text-muted-foreground text-lg">
-            Interactive visualization of the Pumping Lemma for context-free
-            languages
+            Interactive visualization of the Pumping Lemma for Regular Languages
           </p>
         </header>
         {children}
