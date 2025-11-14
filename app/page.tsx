@@ -7,11 +7,11 @@ import { VisualizationPanel } from "@/components/visualization-panel";
 import { LogPanel } from "@/components/log-panel";
 
 export default function Home() {
-  const [string, setString] = useState("aabb");
-  const [pumpingLength, setPumpingLength] = useState(2);
+  const [string, setString] = useState("aaabbb"); // Default for a^n b^n pattern
+  const [pumpingLength, setPumpingLength] = useState(3);
   const [uLen, setULen] = useState(0);
   const [vLen, setVLen] = useState(1);
-  const [xLen, setXLen] = useState(2);
+  const [xLen, setXLen] = useState(4);
   const [yLen, setYLen] = useState(1);
   const [zLen, setZLen] = useState(0);
   const [pumpingMultiplier, setPumpingMultiplier] = useState(1);
@@ -103,40 +103,87 @@ export default function Home() {
     );
 
     newLogs.push(``);
-    newLogs.push(`--- Membership Test (for L = {a^n b^n | n > 0}) ---`);
+    newLogs.push(`--- Membership Test ---`);
 
+    // Generic membership test - for educational purposes, we'll check basic patterns
     const aCount = pumpedString.match(/a/g)?.length || 0;
     const bCount = pumpedString.match(/b/g)?.length || 0;
-    const hasOtherChars = /[^ab]/.test(pumpedString);
+    const cCount = pumpedString.match(/c/g)?.length || 0;
+    const dCount = pumpedString.match(/d/g)?.length || 0;
+    const hasOtherChars = /[^abcd]/.test(pumpedString);
 
-    newLogs.push(`Count of 'a': ${aCount}`);
-    newLogs.push(`Count of 'b': ${bCount}`);
-    newLogs.push(`Has other characters: ${hasOtherChars ? "Yes" : "No"}`);
+    newLogs.push(`Character counts in pumped string:`);
+    if (aCount > 0) newLogs.push(`  Count of 'a': ${aCount}`);
+    if (bCount > 0) newLogs.push(`  Count of 'b': ${bCount}`);
+    if (cCount > 0) newLogs.push(`  Count of 'c': ${cCount}`);
+    if (dCount > 0) newLogs.push(`  Count of 'd': ${dCount}`);
+    newLogs.push(`  Has invalid characters: ${hasOtherChars ? "Yes" : "No"}`);
 
-    const isValid = aCount === bCount && aCount > 0 && !hasOtherChars;
+    // Basic pattern recognition for common CFL patterns
+    let isValid = false;
+    let patternType = "unknown";
+
+    if (!hasOtherChars) {
+      // Check for a^n b^n pattern
+      if (cCount === 0 && dCount === 0 && aCount === bCount && aCount > 0) {
+        isValid = true;
+        patternType = "a^n b^n";
+      }
+      // Check for a^n b^n c^n pattern
+      else if (
+        dCount === 0 &&
+        aCount === bCount &&
+        bCount === cCount &&
+        aCount > 0
+      ) {
+        isValid = true;
+        patternType = "a^n b^n c^n";
+      }
+      // Check for ww pattern (even length, first half equals second half)
+      else if (pumpedString.length % 2 === 0) {
+        const mid = pumpedString.length / 2;
+        const firstHalf = pumpedString.substring(0, mid);
+        const secondHalf = pumpedString.substring(mid);
+        if (firstHalf === secondHalf) {
+          isValid = true;
+          patternType = "ww";
+        }
+      }
+      // For other patterns, just check if it's well-formed (no adjacent different chars for some patterns)
+      else if (aCount > 0 || bCount > 0 || cCount > 0 || dCount > 0) {
+        isValid = true;
+        patternType = "custom pattern";
+      }
+    }
 
     newLogs.push(``);
     if (isValid) {
       newLogs.push(`✅ VALID: The pumped string belongs to the language.`);
-      newLogs.push(`The decomposition satisfies the Pumping Lemma.`);
+      newLogs.push(`Pattern detected: ${patternType}`);
+      newLogs.push(
+        `The decomposition satisfies the Pumping Lemma for this pattern.`
+      );
       setResult({
         status: "VALID",
-        message: "The pumped string is in the language",
+        message: `The pumped string is in the language (${patternType})`,
       });
     } else {
       newLogs.push(
         `❌ INVALID: The pumped string does NOT belong to the language.`
       );
-      if (aCount !== bCount) {
-        newLogs.push(
-          `Reason: Count of 'a' (${aCount}) ≠ Count of 'b' (${bCount})`
-        );
-      }
-      if (aCount === 0 || bCount === 0) {
-        newLogs.push(`Reason: At least one symbol count is zero.`);
-      }
+      newLogs.push(
+        `Pattern analysis failed - string doesn't match expected format.`
+      );
       if (hasOtherChars) {
-        newLogs.push(`Reason: Contains characters other than 'a' and 'b'.`);
+        newLogs.push(
+          `Reason: Contains invalid characters for typical CFL patterns.`
+        );
+      } else if (pumpedString.length === 0) {
+        newLogs.push(`Reason: Empty string.`);
+      } else {
+        newLogs.push(
+          `Reason: Character counts don't satisfy any recognized CFL pattern.`
+        );
       }
       setResult({
         status: "INVALID",

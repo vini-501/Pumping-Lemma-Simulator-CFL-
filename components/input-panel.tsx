@@ -4,6 +4,14 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { useState } from "react";
 
 interface InputPanelProps {
   string: string;
@@ -26,6 +34,49 @@ interface InputPanelProps {
   isRunning: boolean;
 }
 
+type LanguagePattern = {
+  id: string;
+  name: string;
+  description: string;
+  example: string;
+  parameters: { name: string; label: string; min: number; default: number }[];
+};
+
+const languagePatterns: LanguagePattern[] = [
+  {
+    id: "anbncn",
+    name: "L = {aⁿbⁿcⁿ : n ≥ 0}",
+    description: "Equal numbers of a's, b's, and c's",
+    example: "aaabbbccc",
+    parameters: [{ name: "n", label: "n", min: 1, default: 3 }],
+  },
+  {
+    id: "ww",
+    name: "L = {ww : w ∈ {a, b}*}",
+    description: "String repeated twice",
+    example: "abab",
+    parameters: [{ name: "length", label: "w length", min: 1, default: 2 }],
+  },
+  {
+    id: "anbn",
+    name: "L = {aⁿbⁿ : n ≥ 0}",
+    description: "Equal numbers of a's and b's",
+    example: "aaabbb",
+    parameters: [{ name: "n", label: "n", min: 1, default: 3 }],
+  },
+  {
+    id: "aibjckdj",
+    name: "L = {aⁱbʲcᵏdʲ : j ≠ k}",
+    description: "Different numbers of b's and c's",
+    example: "aabbcddd",
+    parameters: [
+      { name: "i", label: "i (a's)", min: 1, default: 2 },
+      { name: "j", label: "j (b's)", min: 1, default: 2 },
+      { name: "k", label: "k (c's)", min: 1, default: 1 },
+    ],
+  },
+];
+
 export function InputPanel({
   string,
   setString,
@@ -46,6 +97,15 @@ export function InputPanel({
   onRun,
   isRunning,
 }: InputPanelProps) {
+  const [selectedPattern, setSelectedPattern] = useState<string>("anbn");
+  const [patternParams, setPatternParams] = useState<Record<string, number>>({
+    n: 3,
+    length: 2,
+    i: 2,
+    j: 2,
+    k: 1,
+  });
+
   const totalLen = uLen + vLen + xLen + yLen + zLen;
   const isValidPartition = totalLen === string.length && string.length > 0;
 
@@ -72,6 +132,49 @@ export function InputPanel({
       setYLen(newYLen);
       setZLen(string.length - sum);
     }
+  };
+
+  const generateString = (
+    patternId: string,
+    params: Record<string, number>
+  ): string => {
+    switch (patternId) {
+      case "anbncn":
+        return (
+          "a".repeat(params.n) + "b".repeat(params.n) + "c".repeat(params.n)
+        );
+      case "ww":
+        const chars = ["a", "b"];
+        let w = "";
+        for (let i = 0; i < params.length; i++) {
+          w += chars[Math.floor(Math.random() * chars.length)];
+        }
+        return w + w;
+      case "anbn":
+        return "a".repeat(params.n) + "b".repeat(params.n);
+      case "aibjckdj":
+        return (
+          "a".repeat(params.i) +
+          "b".repeat(params.j) +
+          "c".repeat(params.k) +
+          "d".repeat(params.j)
+        );
+      default:
+        return "aabb";
+    }
+  };
+
+  const handlePatternChange = (patternId: string) => {
+    setSelectedPattern(patternId);
+    const newString = generateString(patternId, patternParams);
+    setString(newString);
+  };
+
+  const handleParamChange = (paramName: string, value: number) => {
+    const newParams = { ...patternParams, [paramName]: value };
+    setPatternParams(newParams);
+    const newString = generateString(selectedPattern, newParams);
+    setString(newString);
   };
 
   const randomizeSegments = () => {
@@ -156,25 +259,84 @@ export function InputPanel({
       </h2>
 
       <div className="space-y-5">
-        {/* String Input */}
+        {/* Language Pattern Selection */}
         <div>
-          <Label
-            htmlFor="string"
-            className="text-sm font-medium text-foreground"
+          <Label className="text-sm font-medium text-foreground">
+            Language Pattern
+          </Label>
+          <Select
+            value={selectedPattern}
+            onValueChange={handlePatternChange}
+            disabled={isRunning}
           >
-            Test String (s)
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select a language pattern" />
+            </SelectTrigger>
+            <SelectContent>
+              {languagePatterns.map((pattern) => (
+                <SelectItem key={pattern.id} value={pattern.id}>
+                  <div className="flex flex-col">
+                    <span className="font-mono text-sm">{pattern.name}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {pattern.description}
+                    </span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Pattern Parameters */}
+        <div>
+          <Label className="text-sm font-medium text-foreground mb-2 block">
+            Parameters
+          </Label>
+          <div className="grid grid-cols-2 gap-3">
+            {languagePatterns
+              .find((p) => p.id === selectedPattern)
+              ?.parameters.map((param) => (
+                <div key={param.name}>
+                  <Label
+                    htmlFor={param.name}
+                    className="text-xs text-foreground"
+                  >
+                    {param.label}
+                  </Label>
+                  <Input
+                    id={param.name}
+                    type="number"
+                    min={param.min}
+                    value={patternParams[param.name] || param.default}
+                    onChange={(e) =>
+                      handleParamChange(
+                        param.name,
+                        Math.max(
+                          param.min,
+                          Number.parseInt(e.target.value) || param.default
+                        )
+                      )
+                    }
+                    className="font-mono text-sm"
+                    disabled={isRunning}
+                  />
+                </div>
+              ))}
+          </div>
+        </div>
+
+        {/* Generated String Display */}
+        <div>
+          <Label className="text-sm font-medium text-foreground">
+            Generated String (s)
           </Label>
           <p className="text-xs text-muted-foreground mb-2">
-            Default: a^n b^n | n {">"} 0
+            Current pattern:{" "}
+            {languagePatterns.find((p) => p.id === selectedPattern)?.name}
           </p>
-          <Input
-            id="string"
-            value={string}
-            onChange={(e) => setString(e.target.value || "a")}
-            placeholder="aabb"
-            className="font-mono"
-            disabled={isRunning}
-          />
+          <div className="px-3 py-2 bg-muted rounded border border-input text-sm font-mono">
+            {string}
+          </div>
         </div>
 
         {/* Pumping Length */}
