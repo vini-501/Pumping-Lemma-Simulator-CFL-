@@ -203,7 +203,7 @@ export function VisualizationPanel({
         >
           <div className="flex items-center gap-3">
             <div
-              className={`text-2xl font-bold ${
+              className={`text-3xl font-bold ${
                 result.status === "VALID"
                   ? "text-green-600 dark:text-green-400"
                   : "text-red-600 dark:text-red-400"
@@ -213,7 +213,7 @@ export function VisualizationPanel({
             </div>
             <div>
               <h4
-                className={`font-semibold ${
+                className={`text-lg font-bold px-3 py-2 rounded-lg ${
                   result.status === "VALID"
                     ? "text-green-900 dark:text-green-100"
                     : "text-red-900 dark:text-red-100"
@@ -222,13 +222,15 @@ export function VisualizationPanel({
                 {result.status}
               </h4>
               <p
-                className={`text-sm ${
+                className={`text-lg font-bold px-2 py-2 rounded-lg ${
                   result.status === "VALID"
-                    ? "text-green-800 dark:text-green-200"
-                    : "text-red-800 dark:text-red-200"
+                    ? "text-green-900 dark:text-green-100 bg-green-100 dark:bg-green-800"
+                    : "text-red-900 dark:text-red-100 bg-red-100 dark:bg-red-800"
                 }`}
               >
-                {result.message}
+                {result.status === "VALID"
+                  ? "The pumped string is in the language"
+                  : "The pumped string is NOT in the language"}
               </p>
             </div>
           </div>

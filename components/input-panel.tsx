@@ -75,6 +75,20 @@ const languagePatterns: LanguagePattern[] = [
       { name: "k", label: "k (c's)", min: 1, default: 1 },
     ],
   },
+  {
+    id: "0n1n2n",
+    name: "L = {0ⁿ1ⁿ2ⁿ : n ≥ 1}",
+    description: "Equal numbers of 0's, 1's, and 2's",
+    example: "000111222",
+    parameters: [{ name: "n", label: "n", min: 1, default: 3 }],
+  },
+  {
+    id: "0n1n",
+    name: "L = {0ⁿ1ⁿ : n > 1}",
+    description: "Equal numbers of 0's and 1's (n > 1)",
+    example: "001122",
+    parameters: [{ name: "n", label: "n", min: 2, default: 3 }],
+  },
 ];
 
 export function InputPanel({
@@ -159,6 +173,12 @@ export function InputPanel({
           "c".repeat(params.k) +
           "d".repeat(params.j)
         );
+      case "0n1n2n":
+        return (
+          "0".repeat(params.n) + "1".repeat(params.n) + "2".repeat(params.n)
+        );
+      case "0n1n":
+        return "0".repeat(params.n) + "1".repeat(params.n);
       default:
         return "aabb";
     }
