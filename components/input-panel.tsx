@@ -11,7 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface InputPanelProps {
   string: string;
@@ -119,6 +119,58 @@ export function InputPanel({
     j: 2,
     k: 1,
   });
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // Generate initial string when client is ready
+  useEffect(() => {
+    if (isClient) {
+      const generateStringForPattern = (
+        patternId: string,
+        params: Record<string, number>
+      ): string => {
+        switch (patternId) {
+          case "anbncn":
+            return (
+              "a".repeat(params.n) + "b".repeat(params.n) + "c".repeat(params.n)
+            );
+          case "ww":
+            const chars = ["a", "b"];
+            let w = "";
+            for (let i = 0; i < params.length; i++) {
+              w += chars[i % 2]; // Use deterministic pattern for initial load
+            }
+            return w + w;
+          case "anbn":
+            return "a".repeat(params.n) + "b".repeat(params.n);
+          case "aibjckdj":
+            return (
+              "a".repeat(params.i) +
+              "b".repeat(params.j) +
+              "c".repeat(params.k) +
+              "d".repeat(params.j)
+            );
+          case "0n1n2n":
+            return (
+              "0".repeat(params.n) + "1".repeat(params.n) + "2".repeat(params.n)
+            );
+          case "0n1n":
+            return "0".repeat(params.n) + "1".repeat(params.n);
+          default:
+            return "aabb";
+        }
+      };
+
+      const newString = generateStringForPattern(
+        selectedPattern,
+        patternParams
+      );
+      setString(newString);
+    }
+  }, [isClient]);
 
   const totalLen = uLen + vLen + xLen + yLen + zLen;
   const isValidPartition = totalLen === string.length && string.length > 0;
@@ -161,7 +213,9 @@ export function InputPanel({
         const chars = ["a", "b"];
         let w = "";
         for (let i = 0; i < params.length; i++) {
-          w += chars[Math.floor(Math.random() * chars.length)];
+          // Use deterministic pattern for SSR, random for client
+          w +=
+            chars[isClient ? Math.floor(Math.random() * chars.length) : i % 2];
         }
         return w + w;
       case "anbn":
@@ -186,87 +240,117 @@ export function InputPanel({
 
   const handlePatternChange = (patternId: string) => {
     setSelectedPattern(patternId);
-    const newString = generateString(patternId, patternParams);
-    setString(newString);
+    if (isClient) {
+      const newString = generateString(patternId, patternParams);
+      setString(newString);
+    }
   };
 
   const handleParamChange = (paramName: string, value: number) => {
     const newParams = { ...patternParams, [paramName]: value };
     setPatternParams(newParams);
-    const newString = generateString(selectedPattern, newParams);
-    setString(newString);
+    if (isClient) {
+      const newString = generateString(selectedPattern, newParams);
+      setString(newString);
+    }
   };
 
   const randomizeSegments = () => {
-    if (string.length < 5) return; // Need at least 5 characters for all segments to be ≥ 1
+    if (string.length < 3) return; // Need at least 3 characters for basic decomposition
 
-    // Ensure all segments have at least length 1: u≥1, v≥1, x≥1, y≥1, z≥1
-    // Total minimum required: 5 characters
+    // 50% chance to generate invalid decomposition
+    const shouldGenerateInvalid = Math.random() < 0.5;
 
-    // Start with minimum allocation (1 for each segment)
-    let remainingLength = string.length - 5; // Subtract the required 1 for each segment
+    if (shouldGenerateInvalid) {
+      // Generate invalid decomposition by violating constraints
+      const violationType = Math.random() < 0.5 ? "vxy_length" : "vy_empty";
 
-    // Generate random additional lengths for each segment
-    const additionalLengths = Array(4)
-      .fill(0)
-      .map(() => {
-        if (remainingLength === 0) return 0;
-        const maxAdditional = Math.floor(remainingLength / 2); // Conservative distribution
-        const additional = Math.floor(Math.random() * (maxAdditional + 1));
-        remainingLength = Math.max(0, remainingLength - additional);
-        return additional;
-      });
+      if (violationType === "vxy_length") {
+        // Violate |vxy| ≤ p constraint
+        const randomULen = Math.floor(
+          Math.random() * Math.max(1, string.length - pumpingLength)
+        );
+        const remainingAfterU = string.length - randomULen;
 
-    // Distribute any remaining length randomly
-    while (remainingLength > 0) {
-      const randomIndex = Math.floor(Math.random() * 4);
-      additionalLengths[randomIndex]++;
-      remainingLength--;
+        // Force vxy to be larger than pumping length
+        const minVxyForViolation = pumpingLength + 1;
+        const maxVxyPossible = remainingAfterU;
+
+        if (maxVxyPossible >= minVxyForViolation) {
+          const vxyLen =
+            Math.floor(
+              Math.random() * (maxVxyPossible - minVxyForViolation + 1)
+            ) + minVxyForViolation;
+
+          // Distribute vxy randomly among v, x, y (ensuring at least |vy| ≥ 1)
+          const randomXLen = Math.floor(
+            Math.random() * Math.max(1, vxyLen - 1)
+          );
+          const remainingVY = vxyLen - randomXLen;
+          const randomVLen = Math.floor(Math.random() * (remainingVY + 1));
+          const randomYLen = remainingVY - randomVLen;
+
+          // Ensure |vy| ≥ 1
+          if (randomVLen === 0 && randomYLen === 0) {
+            const randomVLen_fixed = 1;
+            updateSegment(randomULen, randomVLen_fixed, randomXLen, randomYLen);
+          } else {
+            updateSegment(randomULen, randomVLen, randomXLen, randomYLen);
+          }
+          return;
+        }
+      } else {
+        // Violate |vy| ≥ 1 constraint (make both v and y zero)
+        const randomULen = Math.floor(
+          Math.random() * Math.max(1, string.length - 1)
+        );
+        const remainingAfterU = string.length - randomULen;
+        const randomXLen = Math.min(remainingAfterU, pumpingLength);
+
+        updateSegment(randomULen, 0, randomXLen, 0);
+        return;
+      }
     }
 
-    // Calculate final lengths (minimum 1 + additional)
-    const randomULen = 1 + additionalLengths[0];
-    let randomVLen = 1 + additionalLengths[1];
-    let randomXLen = 1 + additionalLengths[2];
-    let randomYLen = 1 + additionalLengths[3];
+    // Generate valid decomposition (original logic)
+    const maxULen = Math.max(0, string.length - 3); // leave at least 3 for vxy
+    const randomULen = Math.floor(Math.random() * (maxULen + 1));
 
-    // Ensure pumping lemma condition: |vxy| ≤ p
-    const vxyLength = randomVLen + randomXLen + randomYLen;
-    if (vxyLength > pumpingLength) {
-      // Adjust vxy lengths to fit within pumping length while keeping each ≥ 1
-      const excess = vxyLength - pumpingLength;
-      const minVxyLength = 3; // minimum for v≥1, x≥1, y≥1
+    const remainingAfterU = string.length - randomULen;
 
-      if (pumpingLength >= minVxyLength) {
-        // Redistribute vxy within pumping length constraint
-        const availableVxyLength = pumpingLength - 3; // subtract minimum 1 for each
+    // Ensure |vxy| ≤ p and |vy| ≥ 1
+    const maxVxyLen = Math.min(remainingAfterU, pumpingLength);
+    const minVxyLen = Math.max(
+      1,
+      remainingAfterU - Math.max(0, string.length - pumpingLength - randomULen)
+    );
 
-        // Redistribute the available length randomly
-        const vxyDistribution = Array(3)
-          .fill(0)
-          .map(() => {
-            const max = Math.floor(availableVxyLength / 3);
-            return Math.floor(Math.random() * (max + 1));
-          });
+    if (maxVxyLen < minVxyLen) {
+      // Fallback to simple valid decomposition
+      updateSegment(0, 1, Math.max(1, string.length - 2), 1);
+      return;
+    }
 
-        // Add any remaining length
-        let remaining =
-          availableVxyLength - vxyDistribution.reduce((a, b) => a + b, 0);
-        while (remaining > 0) {
-          const idx = Math.floor(Math.random() * 3);
-          vxyDistribution[idx]++;
-          remaining--;
-        }
+    const vxyLen =
+      Math.floor(Math.random() * (maxVxyLen - minVxyLen + 1)) + minVxyLen;
 
-        randomVLen = 1 + vxyDistribution[0];
-        randomXLen = 1 + vxyDistribution[1];
-        randomYLen = 1 + vxyDistribution[2];
-      } else {
-        // If pumping length is too small, use minimum values
-        randomVLen = 1;
-        randomXLen = Math.min(1, pumpingLength - 2);
-        randomYLen = Math.max(1, pumpingLength - randomVLen - randomXLen);
-      }
+    // Randomly distribute vxy among v, x, y with constraint |vy| ≥ 1
+    let randomVLen, randomXLen, randomYLen;
+
+    // Ensure at least one of v or y is non-zero
+    const vyTotalMin = 1;
+    const maxX = vxyLen - vyTotalMin;
+
+    randomXLen = Math.floor(Math.random() * (maxX + 1));
+    const remainingVY = vxyLen - randomXLen;
+
+    // Split remaining between v and y randomly, ensuring total vy ≥ 1
+    randomVLen = Math.floor(Math.random() * (remainingVY + 1));
+    randomYLen = remainingVY - randomVLen;
+
+    // If both v and y are 0 (shouldn't happen but safety check), fix it
+    if (randomVLen === 0 && randomYLen === 0) {
+      randomVLen = 1;
     }
 
     updateSegment(randomULen, randomVLen, randomXLen, randomYLen);
