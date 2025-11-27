@@ -229,8 +229,8 @@ export function VisualizationPanel({
                 }`}
               >
                 {result.status === "VALID"
-                  ? "The pumped string is in the language"
-                  : "The pumped string is NOT in the language"}
+                  ? "The pumped string is in the context free language"
+                  : "The pumped string is NOT in the context free language"}
               </p>
             </div>
           </div>
