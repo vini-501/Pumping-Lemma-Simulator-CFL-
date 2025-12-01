@@ -282,7 +282,7 @@ export function InputPanel({
               Math.random() * (maxVxyPossible - minVxyForViolation + 1)
             ) + minVxyForViolation;
 
-          // Distribute vxy randomly among v, x, y (ensuring at least |vy| ≥ 1)
+          // Distribute vxy randomly among v, x, y (ensuring at least |vy| ≥ 0)
           const randomXLen = Math.floor(
             Math.random() * Math.max(1, vxyLen - 1)
           );
@@ -290,7 +290,7 @@ export function InputPanel({
           const randomVLen = Math.floor(Math.random() * (remainingVY + 1));
           const randomYLen = remainingVY - randomVLen;
 
-          // Ensure |vy| ≥ 1
+          // Ensure |vy| ≥ 0
           if (randomVLen === 0 && randomYLen === 0) {
             const randomVLen_fixed = 1;
             updateSegment(randomULen, randomVLen_fixed, randomXLen, randomYLen);
@@ -300,7 +300,7 @@ export function InputPanel({
           return;
         }
       } else {
-        // Violate |vy| ≥ 1 constraint (make both v and y zero)
+        // Violate |vy| ≥ 0 constraint (make both v and y zero)
         const randomULen = Math.floor(
           Math.random() * Math.max(1, string.length - 1)
         );
@@ -318,7 +318,7 @@ export function InputPanel({
 
     const remainingAfterU = string.length - randomULen;
 
-    // Ensure |vxy| ≤ p and |vy| ≥ 1
+    // Ensure |vxy| ≤ p and |vy| ≥ 0
     const maxVxyLen = Math.min(remainingAfterU, pumpingLength);
     const minVxyLen = Math.max(
       1,
@@ -334,17 +334,17 @@ export function InputPanel({
     const vxyLen =
       Math.floor(Math.random() * (maxVxyLen - minVxyLen + 1)) + minVxyLen;
 
-    // Randomly distribute vxy among v, x, y with constraint |vy| ≥ 1
+    // Randomly distribute vxy among v, x, y with constraint |vy| ≥ 0
     let randomVLen, randomXLen, randomYLen;
 
     // Ensure at least one of v or y is non-zero
-    const vyTotalMin = 1;
+    const vyTotalMin = 0;
     const maxX = vxyLen - vyTotalMin;
 
     randomXLen = Math.floor(Math.random() * (maxX + 1));
     const remainingVY = vxyLen - randomXLen;
 
-    // Split remaining between v and y randomly, ensuring total vy ≥ 1
+    // Split remaining between v and y randomly, ensuring total vy ≥ 0
     randomVLen = Math.floor(Math.random() * (remainingVY + 1));
     randomYLen = remainingVY - randomVLen;
 

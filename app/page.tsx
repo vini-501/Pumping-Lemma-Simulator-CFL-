@@ -51,7 +51,7 @@ export default function Home() {
     const vyLen = vLen + yLen;
 
     const condition1 = vxyLen <= pumpingLength;
-    const condition2 = vyLen >= 1;
+    const condition2 = vyLen >= 0;
 
     newLogs.push(
       `Condition 1: |vxy| ≤ p → |${vxyLen}| ≤ ${pumpingLength} → ${
@@ -59,7 +59,7 @@ export default function Home() {
       }`
     );
     newLogs.push(
-      `Condition 2: |vy| ≥ 1 → |${vyLen}| ≥ 1 → ${
+      `Condition 2: |vy| ≥ 0 → |${vyLen}| ≥ 0 → ${
         condition2 ? "TRUE ✓" : "FALSE ✗"
       }`
     );
@@ -70,7 +70,7 @@ export default function Home() {
       setResult({
         status: "INVALID",
         message: condition1
-          ? "Condition |vy| ≥ 1 failed"
+          ? "Condition |vy| ≥ 0 failed"
           : "Condition |vxy| ≤ p failed",
       });
       setLogs(newLogs);

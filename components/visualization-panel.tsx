@@ -42,7 +42,7 @@ export function VisualizationPanel({
   const vxyLen = vLen + xLen + yLen;
   const vyLen = vLen + yLen;
   const condition1 = vxyLen <= pumpingLength;
-  const condition2 = vyLen >= 1;
+  const condition2 = vyLen >= 0;
 
   const segmentColors = {
     u: "bg-blue-100 text-blue-900 dark:bg-blue-900 dark:text-blue-100",
@@ -178,7 +178,7 @@ export function VisualizationPanel({
                 : "bg-red-50 dark:bg-red-950"
             }`}
           >
-            <span className="font-mono">|vy| ≥ 1 → |{vyLen}| ≥ 1</span>
+            <span className="font-mono">|vy| ≥ 0 → |{vyLen}| ≥ 0</span>
             <span
               className={
                 condition2
